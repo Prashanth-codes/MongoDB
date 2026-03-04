@@ -1,0 +1,186 @@
+Collections Methods:
+
+***Insertion
+1) insertOne():
+	insert only one document into a collection
+	Syntax: db.students.insertOne({document})
+	EX: db.students.insertOne({name:"Nani",age:20})
+	Output:
+	{acknowledged:true, insertionId: ...}
+	
+2) InsertMany():
+	insert many documents into a collection
+	syntax: db.students.insertMany([{doc},{doc}]);
+	Ex:db.students.insertMany([{name:"Nani",age:20},
+		{name:"Sai",age:21}]);
+	Output:
+	{acknowledged:true, id:..., id:....}
+
+***Read/query
+1) find:
+	Used to retrieve/read documents from the collection.
+	syntax: db.collection.find();
+	i) Basic(all docs)
+	ex:db.students.find()
+	output: read all documents
+	
+	ii) with filter:
+	Ex: db.students.find({age: 21})
+	Output: Returns matching documents only with age 21
+	etc etc
+	
+2) findOne:
+	Returns only one document that matches the condition.
+	Syntax: db.collection.findOne();
+	i) Basic:
+	return first document in the collection.
+	Ex: db.students.findOne();
+	ii) filter:
+	return first document in the collection which matches with
+	condition.
+	Ex: db.students.findOne({age:21});
+	
+3) Aggregate:
+	It used for data processing and transformation.
+	It works using pipeline.
+	Like:
+	Docs enter->go through stages->come out transformed.
+	syntax:
+	db.collection.aggregate([
+		{stage1},
+		{stage2},
+		{stage3}
+	]);
+	Each and every stage is starts with $.
+	Ex:Assume sample data for this aggregation examples.
+	{ name: "Ravi", age: 20, marks: 80, city: "Hyd", subjects: ["Math","Sci"] }
+	{ name: "Asha", age: 21, marks: 90, city: "Hyd", subjects: ["Eng","Math"] }
+	{ name: "Kiran", age: 20, marks: 70, city: "Chennai", subjects: ["Sci"] }
+	{ name: "Neha", age: 21, marks: 60, city: "Hyd", subjects: ["Math"] }
+	
+	It works through the aggregation stages.
+	1)match:(like where)
+	db.students.aggregate([
+		{$match: {age: 20}}
+	]);
+	Output:
+	{ name: "Ravi", age: 20, marks: 80, city: "Hyd", subjects: ["Math","Sci"] }
+	{ name: "Kiran", age: 20, marks: 70, city: "Chennai", subjects: ["Sci"] }
+	👉For this query it is simply like find query.
+	
+	2) group:
+	Like group by, group multiple documents based on specific field and perform
+	aggragate calculations like sum,min,max,avg,count on each group.
+	Ex: db.students.aggragate([
+		{
+			$group:{
+				_id:"$age",
+				totalMarks: {$sum: marks},
+				avgMarks: {$avg: marks},
+				count: {$sum: 1}
+			}
+		}
+	]);
+	Output:
+	{ _id: 20, totalMarks: 150, avgMarks: 75, count: 2 }
+	{ _id: 21, totalMarks: 150, avgMarks: 75, count: 2 }
+	
+	3) project:
+	It is used to select, include, exclude and transform the fields in the output
+	documents.
+	It allows:
+	i) choose which fields to show
+	ii) remove fields
+	iii) rename fields
+	iv) create new fields using expressions
+	Ex:
+	db.students.aggregate([
+		{
+			$project:{
+				name:1, // 1 means shows this in output field
+				result: {$cond:[{$gte:["marks",75]},"Pass","Fail"]}
+			}
+		}
+	output:
+	{ name: "Ravi", result: "Pass" }
+	{ name: "Asha", result: "Pass" }
+	{ name: "Kiran", result: "Fail" }
+	{ name: "Neha", result: "Fail" }
+		
+	4) sort:
+	Used to sort documents based on one or more fields.
+	It arranges the documents in ascending or descending order.
+	EX: db.students.aggregate([
+		{
+			$sort: {marks: -1}
+		}
+	])
+	output:
+	{ name: "Asha", age: 21, marks: 90, city: "Hyd", subjects: ["Eng","Math"] }
+	{ name: "Ravi", age: 20, marks: 80, city: "Hyd", subjects: ["Math","Sci"] }
+	{ name: "Kiran", age: 20, marks: 70, city: "Chennai", subjects: ["Sci"] }
+	{ name: "Neha", age: 21, marks: 60, city: "Hyd", subjects: ["Math"] }
+	
+	5) limit:
+	It is used to restrict the number of documents returned in the result.
+	EX: db.students.sort([
+		{	$sort: {marks: -1}},
+		{	$limit: 2}
+	]);
+			
+	6) $count:
+	It is used to count the documents and return the result as 👉field
+	EX: db.students.aggregate([
+		 	{ $match: { city: "Hyd"}},
+		  	{ $count: "totalHydStudents"}
+		])
+	Output:
+	totalHydStudents: 3
+
+	7) unwind:
+	It is used to deconstruct an array fields into multiple documents,
+	creating one document for each element in the array.
+	EX:
+	db.students.aggregate([
+		{	$unwind: "$subjects"}
+	])
+	output:
+	{ name: "Ravi", age: 20, marks: 80, city: "Hyd", subjects: "Math" }
+	{ name: "Ravi", age: 20, marks: 80, city: "Hyd", subjects: "Sci" }
+	{ name: "Asha", age: 21, marks: 90, city: "Hyd", subjects: "Eng" }
+	{ name: "Asha", age: 21, marks: 90, city: "Hyd", subjects: "Math" }
+	{ name: "Kiran", age: 20, marks: 70, city: "Chennai", subjects: "Sci" }
+	{ name: "Neha", age: 21, marks: 60, city: "Hyd", subjects: "Math" }
+	
+	8) lookup:
+	Its like join in sql.
+	It is used to join documents from another collection and combine related data
+	into current documents.
+	Lets take orders collection
+	{ studentName: "Ravi", course: "Java" }
+	{ studentName: "Asha", course: "Python" }
+	EX:
+	db.students.aggregate([
+		{
+			$lookup: {
+				from: "orders",
+				localField: "name",
+				foreignField: "studentName",
+				as: "courses"
+			}
+		}
+	]);
+	output:
+	{
+	  name: "Ravi",
+	  age: 20,
+	  marks: 80,
+	  city: "Hyd",
+	  subjects: ["Math","Sci"],
+	  courses: [
+		{ studentName: "Ravi", course: "Java" }
+	  ]
+	}
+	....
+	
+	👉If no match is found, MongoDB returns an empty array [] in the courses field.
