@@ -1,0 +1,83 @@
+find:
+Ex: sales
+{
+  _id: 1,
+  customer: "Prashanth",
+  status: "completed",
+  total: 120,
+  items: [
+    { name: "laptop", price: 900, quantity: 1 },
+    { name: "mouse", price: 20, quantity: 2 }
+  ]
+}
+{
+  _id: 2,
+  customer: "Rahul",
+  status: "pending",
+  total: 60,
+  items: [
+    { name: "keyboard", price: 50, quantity: 1 },
+    { name: "mouse", price: 20, quantity: 1 }
+  ]
+}
+{
+  _id: 3,
+  customer: "Anjali",
+  status: "completed",
+  total: 40,
+  items: [
+    { name: "bottle", price: 10, quantity: 2 },
+    { name: "pen", price: 5, quantity: 4 }
+  ]
+}
+
+1. Find all sales where status is "completed".
+db.sales.find({status: $eq:{"completed"}});
+db.sales.find({status: "completed"})
+
+2.Find sales where total is greater than 50.'
+db.sales.find({total: {$gt: 50}})
+
+3. Find sales where customer is either "Prashanth" or "Rahul".
+db.sales.find({customer: {$in: ["Prashanth","Rahul"]}})
+
+4.Find sales where items array contains "mouse".
+db.sales.find({items: {$eq: "mouse"}})
+
+5. Find sales where:
+	item name = "mouse"
+	price > 15
+	quantity >= 2
+	All conditions must match the SAME item.
+db.sales.find({items: {$elemMatch: {name: "mouse", price: {$gt:15}, quantity: {$gte: 2}}}});
+
+6. Find sales where total is between 50 and 150.
+db.sales.find({total: {$gt: 50, $lte:150}})
+
+7. Find sales where status is NOT "completed".
+db.sales.find({status: {$ne: "completed"}});
+
+8. Find sales where, At least one item has price greater than 500.
+db.sales.find({items: {$elemMatch: {price:{$gt:500}}}});
+
+
+9.Find sales where:
+	status = "completed"
+	total > 50
+	customer is NOT "Anjali"
+db.sales.find({status: "completed, total: {$gt:50}, customer: {$ne: "Anjali"}});
+
+10.Find sales where:
+items array contains both "mouse" and "keyboard"
+db.sales.find({"items.name": {$all: ["mouse", "keyboard"]}});
+
+11. Find sales where:
+	At least one item has:
+	price between 10 and 100
+	quantity ≥ 2
+	(Conditions must match same item)
+db.sales.find({items: {$elemMatch: {price: {$gt:10, $lte: 100},quantity: {$gt: 2}}}});
+
+
+
+
