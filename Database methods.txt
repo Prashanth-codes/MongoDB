@@ -1,0 +1,58 @@
+Database methods:
+1) use:
+	Use is used to switch current database to another database
+	Ex: use myAppDB
+	Explanation: It will switched to myAppDB, if myAppDB not
+	exists, it will create one.
+	Verify:
+	>db
+	myAppDB //output
+	
+2) createCollection():
+	It is used to create a collection
+	db.createCollection("Books");
+	Output:
+	{ok:1} // means created succesfully
+
+3) Show collections
+	It is used to show the list of collections
+	show collections
+	Output:
+	Books
+
+4) getCollection()
+	It returns reference to an existing collection.
+	-> It does not create, it just give access.
+	db.getCollection("Books");
+	Output:
+	myAppDB.Books
+	Useful in insert
+	ex: db.getCollection("Books").insertOne(...);
+	another way: db.Books.insertOne(...);
+	
+5) getCollectionNames():
+	It is used to show the collections, it is same
+	as "show", but this is actual method, it returns
+	in an array form.
+	Ex: db.createCollection("Students");
+		db.createCollection("Teachers");
+		
+		db.getCollectionNames();
+		Output:
+		["students", "teachers"]
+
+5) db.dropDatabase():
+	It delete the entire current database includes
+	i) All collections
+	ii) All documents
+	iii) All indexes
+	
+	db.dropDatabase():
+	Output:
+	{ok:1, dropped: "myAppDB"}
+
+6) db.stats():
+	It returns statistics about the current database.
+	It gives metadata like no.of collections, documents
+	database size, storage size etc.
+	
