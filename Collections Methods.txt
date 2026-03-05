@@ -184,3 +184,243 @@ Collections Methods:
 	....
 	
 	👉If no match is found, MongoDB returns an empty array [] in the courses field.
+
+4) distinct:
+	Returns unique values of a specific field.
+	It does not remove duplicates, it just show distinct values.
+	syntax: db.collection.distinct("field",filter);
+		field-> field name
+		filter-> optional condition
+	Output in array form.
+	ex:
+	i) without filter: db.students.distinct("city")
+	output: ["Hyd","Chennai"]
+	ii) with filter:
+	db.students.distinct("city", { age: 21 })
+	output: ["Hyd"]
+	👉It shows only specified fields in output, not all other fields.
+5) Count documents:
+	Returns the number of documents that match a condition.
+	db.collection.countDocuments(filter)
+	i) without filter
+	db.students.countDocuments()
+	ii) with filter
+	db.students.countDocuments({age: 20})
+	
+	👉db.students.find().count() == db.students.countDocuments()
+			old								new
+			
+	
+*** Update/replace:
+1) updateOne:
+	Updates only one matching document
+	EX: db.students.updateOne(
+		 	{ name: "Ravi" },        // filter
+		 	{ $set: { age: 25 } }    // update operator
+		)
+	Output:
+	{ acknowledged: true, matchedCount: 1, modifiedCount: 1 }
+	
+	Operators
+	1) set: Used to change value or add a new field(if field not found)
+	
+	2) $inc:
+	Used to increase or decrease numeric values.
+	db.students.updateOne(
+	 	{ name: "Ravi" },
+	 	{ $inc: { age: 1 } }
+	)
+	output same
+	
+	3) unset: remove a field from the document.
+	db.students.updateOne(
+	 	{ name: "Ravi" },
+	 	{ $unset: { city: "" } }
+	)
+	output: same
+	
+	4) push:
+	Used to add a value to an array field.
+	db.students.updateOne(
+	 	{ name: "Ravi" },
+	 	{ $push: { subjects: "Math" } }
+	)
+	
+	5) pull:
+	Used to remove values from an array.
+	db.students.updateOne(
+	 	{ name: "Ravi" },
+	 	{ $pull: { subjects: "Math" } }
+	)
+
+2) UpdateMany
+	Update all matching documents
+	EX: db.students.updateMany(
+	 	{ age: 20 },
+	 	{ $set: { status: "Junior" } }
+	)
+	If 3 students have age 20 → all 3 updated.
+
+3) replaceOne:
+	Completely replaces the document
+	db.students.replaceOne(
+	 	{ name: "Ravi" },
+	 	{ name: "Ravi", age: 30 }
+	)
+	👉Old document is removed and replaced entirely.
+	
+4) findOneAndUpdate()
+	Finds document AND updates it,returns the document
+	db.students.findOneAndUpdate(
+	  { name: "Asha" },
+	  { $set: { age: 22 } },
+	  { returnDocument: "after" }
+	)
+	Options:
+	"before" (default) //return the document before update
+	"after" // return document after update
+	
+5) FindOneAndReplace()
+	Finds document and replaces it,returns document.
+	db.students.findOneAndReplace(
+	 	{ name: "Kiran" },
+	 	{ name: "Kiran", age: 35 }
+	)
+
+*** Delete
+1) deleteOne()
+	Deletes only the first matching document
+	EX: db.students.deleteOne({ age: 20 })
+	Output: { acknowledged: true, deletedCount: 1 }
+
+2) deleteMany():
+	Deletes all matching documents
+	EX: db.students.deleteMany({ age: 20 })
+	Output:
+	{ acknowledged: true, deletedCount: 3 }
+	If 3 students have age 20 → all 3 deleted.
+
+3) findOneandDelete():
+	finds a document, deletes it, return the deleted document.
+	EX: db.students.findOneAndDelete({ name: "Ravi" })
+	Output:
+	{
+	 	_id: ObjectId("65..."),
+	 	name: "Ravi",
+	 	age: 20
+	}
+	
+***Index Managament:
+It improves query performance by allowing the database to quickly
+locate documents without scanning entire collection.
+Without index-> performs a collection scan(collscan)
+with index->Performs an index scan(ixscan)
+
+1) Index:
+It is a data structure that stores field values in sorted order
+along with reference to documents.
+
+2) Default index:
+Every collection has unique id {_id:1}
+
+3) create index:
+Syntax: db.collection.createIndex({field,1,})
+1-> ascending   -1->descending
+
+{ _id: 1, name: "Ravi",  age: 20, city: "Hyderabad", marks: 85 }
+{ _id: 2, name: "Asha",  age: 21, city: "Chennai",   marks: 90 }
+{ _id: 3, name: "Kiran", age: 20, city: "Hyderabad", marks: 75 }
+{ _id: 4, name: "Neha",  age: 22, city: "Delhi",     marks: 95 }
+{ _id: 5, name: "Arun",  age: 21, city: "Chennai",   marks: 70 }
+
+EX:1) without index:
+	db.students.find({age:20});
+	Checks Ravi ✅
+	Checks Asha ❌
+	Checks Kiran ✅
+	Checks Neha ❌
+	Checks Arun ❌
+	
+	Output:
+	{ _id: 1, name: "Ravi",  age: 20, city: "Hyderabad", marks: 85 }
+	{ _id: 3, name: "Kiran", age: 20, city: "Hyderabad", marks: 75 }
+	
+	2) create index:
+	db.students.createIndex({age:1})
+	Internally indexes look like:
+	20-[1,3]
+	21-[2,5]
+	22-[4]
+	
+	3) compound index:
+	Used when filtering based on multiple fields.
+	db.students.createIndex({ city: 1, age: 1 })
+	i) sort by city
+	ii) if city is same, then sort by age.
+	
+	4) unique index:
+	prevents duplicate values
+	db.students.createIndex({email:1},{unique: true})
+	
+	5) text index:
+	{ _id: 1, title: "Intro", content: "MongoDB is a NoSQL database" }
+	{ _id: 2, title: "Indexing", content: "Indexes improve query performance" }
+	{ _id: 3, title: "Aggregation", content: "MongoDB aggregation framework is powerful" }
+	{ _id: 4, title: "SQL", content: "MySQL is a relational database" }
+	
+	db.students.createIndex({content: "text");
+	Conceptually it becomes like:
+	"mongodb" -> [1, 3]
+	"nosql" -> [1]
+	"indexes" -> [2]
+	"mysql" -> [4]
+	So instead of storing full sentences, it stores words separately.
+	
+	ex: db.posts.find({ $text: { $search: "mongodb" } })
+	output:
+	{ _id: 1, title: "Intro", content: "MongoDB is a NoSQL database" }
+	{ _id: 3, title: "Aggregation", content: "MongoDB aggregation framework is powerful" }
+	
+2) createIndexes:
+	It is used to create multiple indexes in one command.
+	syntax: db.collection.createIndexes([
+	   { key: { field1: 1 } },
+	   { key: { field2: -1 } }
+	])
+	EX: db.students.createIndexes([
+	   { key: { age: 1 } },
+	   { key: { city: 1 } }
+	])
+	mongo creates index on age, city.
+	db.students.find({ age: 20 })
+	db.students.find({ city: "Hyderabad" })
+	output: both are fast
+	
+3) getIndexes:
+	It shows all indexes created on the collection.
+	db.students.getIndexes()
+	
+4) dropIndex()?
+	It removes one specific index from a collection.
+	1) index name:
+	db.students.dropIndex("age_1");
+	2) index key:
+	db.students.dropIndex({age:1});
+	
+*** stats
+It shows the stats of the collection like
+i) no.of documents
+ii) storage size
+iii) index size
+iv) total size
+syntax: db.students.stats();
+
+*** rename collection:
+It is used to rename the collection.
+db.students.renameCollection("Students1");
+
+*** drop
+drop the collections
+db.students.drop()
+output:
+true
