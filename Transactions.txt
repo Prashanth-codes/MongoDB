@@ -1,0 +1,121 @@
+Transactions
+Transactions are used to ensure multiple database operations
+across documents or collections either all succeed or all failed
+together, keeping the database consistent.
+
+1) startSession:
+	creates a new client session, transactions must run inside
+	the session.
+	const session = client.startSession();
+	EX:
+	{ name: "Prashanth", balance: 5000 },
+  	{ name: "Rahul", balance: 3000 }
+
+2) startTransaction:
+	Starts a transaction inside the session.
+	syntax: session.startTransaction();
+	Now mongoDB will treat operations as part of one transaction.
+	
+3) commitTransaction:
+	commits all operations in the transaction permanently.
+	syntax: session.commitTransaction();
+	
+	EX: Money Transfer
+	const session = client.startSession();
+	try{
+		session.startTransaction();
+		db.accounts.updateOne(
+			{name: "prashanth"},
+			{$inc: {balance: -1000}},
+			{session}
+		);
+		db.accounts.updateOne(
+			{name: "sai"},
+			{$inc: {balance: 1000}},
+			{session}
+		);
+		session.commitTransaction();
+		console.log("Transaction committed");
+	}
+	finally{
+		session.endSession():	
+	}
+	
+	Output:
+	Transaction committed
+	db.accounts.find()
+	[
+	  { name: "Prashanth", balance: 4000 },
+	  { name: "Rahul", balance: 4000 }
+	]
+	Money transferred successfully.
+	
+4) abortTransaction:
+	cancels the transaction and rollback all changes.
+	EX: Failed transaction
+	const session = client.startSession();
+	try {
+		session.startTransaction();
+		db.accounts.findOne(
+			session.startTransaction();
+		db.accounts.updateOne(
+			{name: "prashanth"},
+			{$inc: {balance: -1000}},
+			{session}
+		);
+		throw new Error("Something went wrong");
+		db.accounts.updateOne(
+			{name: "sai"},
+			{$inc: {balance: 1000}},
+			{session}
+		);
+		session.commitTransaction();
+		console.log("Transaction committed");
+	}
+	catch(error){
+		session.abortTransaction();
+		console.log("Transaction aborted");
+	}
+	finally{
+		session.endSession();
+	}
+	Output:
+	Transaction aborted
+	{ name: "Prashanth", balance: 5000 },
+  	{ name: "Rahul", balance: 3000 }
+	No changes happened (rollback successful).
+	
+5) endSession
+	Close the session and releases resources.
+	EX: session.endSession();
+	👉Always call this after commit/abort.
+
+6) withTransaction:
+	Automatically handles startTransaction(),commitTransaction(),abortTransaction()
+	Safer and cleaner way to use transactions.
+	const session = client.startSession();
+	try{
+	 	await session.withTransaction(async () => {
+			await db.accounts.updateOne(
+			  	{ name: "Prashanth" },
+			  	{ $inc: { balance: -500 } },
+			  	{ session }
+			);
+			await db.accounts.updateOne(
+			 	{ name: "Rahul" },
+			 	{ $inc: { balance: 500 } },
+			 	{ session }
+			);
+	  });
+	  console.log("Transaction completed automatically");
+	} finally {
+	  await session.endSession();
+	}
+	Output:
+	Transaction completed automatically
+	[
+	 	{ name: "Prashanth", balance: 4500 },
+	 	{ name: "Rahul", balance: 3500 }
+	]
+	If any error occurs ->it automatically aborts.
+	If everything succeeds -> it automatically commits.
