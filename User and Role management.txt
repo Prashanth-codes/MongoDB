@@ -1,0 +1,79 @@
+User and Role management methods
+1) db.createUser()
+	It is used to create a new user in MongoDB with specific
+	roles and permissions.
+	These roles control what operations the user can perform
+	on databases and collections.
+	syntax:
+	db.createUser(
+		{
+		 	user: "username",
+		 	pwd: "password",
+		 	roles: [
+				{ role: "role_name", db: "database_name" }
+		  	]
+		}
+	)
+	EX:
+	use companyDB
+	db.createUser({
+	 	user: "prashanth",
+	 	pwd: "pass123",
+	 	roles: [
+			{ role: "readWrite", db: "companyDB" }
+	  	]
+	})
+	Role			Meaning
+	read			Can only read documents
+	readWrite		Can read and modify documents
+	dbAdmin			Can manage indexes, stats, etc
+	userAdmin		Can create and manage users
+	clusterAdmin	Manage cluster operations
+	root			Full access to everything
+
+2) updateUser:
+	Updates an existing user’s password or roles.
+	EX:
+	db.updateUser(
+	  "prashanth",
+	  {
+		pwd: "newpass123",
+		roles: [
+		  { role: "readWrite", db: "companyDB" }
+		]
+	  }
+	)
+	
+3) db.dropUser:
+	Deletes a specific user from the database.
+	syntax: db.dropUser("username")
+	EX: db.dropUser("prashanth")
+	
+4) db.getUser();
+	Returns details of a specific user.
+	Syntax: db.getUser("username");
+	EX: db.getUser("prashanth");
+
+5) db.getUsers():
+	Displays all users in the current database.
+	db.getUsers()
+	
+6) db.grantRolesToUser()
+	Adds new roles to an existing user.
+	db.grantRolesToUser(
+	  "prashanth",
+	  [
+		{ role: "dbAdmin", db: "companyDB" }
+	  ]
+	)
+	
+7) db.revokeRolesFromUser():
+	Removes roles from a user.
+	EX:
+	db.revokeRolesFromUser(
+	  "prashanth",
+	 	[
+			{ role: "dbAdmin", db: "companyDB" }
+	  	]
+	)
+	
