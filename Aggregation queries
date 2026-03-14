@@ -1,0 +1,332 @@
+db.users.insertMany([
+{_id:1,name:"Rahul",age:22,city:"Hyderabad",email:"rahul@gmail.com",membership:"gold",orders:5,active:true,skills:["React","Node","MongoDB"],joinedYear:2022},
+{_id:2,name:"Anjali",age:24,city:"Chennai",email:"anjali@gmail.com",membership:"silver",orders:2,active:true,skills:["Java","Spring"],joinedYear:2023},
+{_id:3,name:"Kiran",age:21,city:"Hyderabad",email:"kiran@gmail.com",membership:"bronze",orders:1,active:false,skills:["Python","Django"],joinedYear:2024},
+{_id:4,name:"Sneha",age:23,city:"Bangalore",email:"sneha@gmail.com",membership:"gold",orders:7,active:true,skills:["React","NextJS"],joinedYear:2021},
+{_id:5,name:"Arjun",age:25,city:"Mumbai",email:"arjun@gmail.com",membership:"silver",orders:4,active:true,skills:["Angular","Node"],joinedYear:2020},
+{_id:6,name:"Priya",age:22,city:"Hyderabad",email:"priya@gmail.com",membership:"gold",orders:8,active:true,skills:["React","MongoDB"],joinedYear:2023},
+{_id:7,name:"Vikram",age:26,city:"Delhi",email:"vikram@gmail.com",membership:"bronze",orders:0,active:false,skills:["C++","DSA"],joinedYear:2024},
+{_id:8,name:"Meena",age:23,city:"Chennai",email:"meena@gmail.com",membership:"silver",orders:3,active:true,skills:["Python","ML"],joinedYear:2022}
+])
+
+db.users.aggregate([
+  {
+    $unwind: "$skills"
+  },
+  {
+    $group: {
+      _id: "$skills",
+      totalUsers: { $sum: 1 }
+    }
+  }
+])
+
+db.users.aggregate([
+  {
+    $unwind: "$skills"
+  },
+  {
+    $group: {
+      _id: "$skills"
+    }
+  }
+])
+
+db.users.aggregate([
+  {$unwind: "$skills"},
+  {$group: {
+    _id: "$skills",
+    count: {$sum: 1}
+  }},
+  {$sort: {count: -1}},
+  {$project:{
+    _id: 0,
+    skill: "$_id",
+    count: 1
+  }}
+])
+
+db.users.aggregate([
+  {
+    $bucket: {
+      groupBy: "$age",
+      boundaries: [20, 23, 26, 30],
+      default: "Other",
+      output: {
+        totalUsers: { $sum: 1 }
+      }
+    }
+  }
+])
+
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$active",
+      totalUsers: {$sum: 1}
+    }
+  },
+  {
+    $project: {
+      _id:0,
+      status: "$_id",
+      totalUsers: 1
+    }
+  }
+])
+
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      totalSkills: { $size: "$skills" }
+    }
+  },
+  {
+    $match: {
+      totalSkills: { $gt: 2 }
+    }
+  }
+])
+
+db.users.aggregate([
+{
+$facet:{
+  usersByCity:[
+    {
+      $group:{
+        _id:"$city",
+        totalUsers:{ $sum:1 }
+      }
+    }
+  ],
+  usersByMembership:[
+    {
+      $group:{
+        _id:"$membership",
+        totalUsers:{ $sum:1 }
+      }
+    }
+  ]
+}
+}
+])
+
+db.users.aggregate([
+  { $unwind: "$skills" },
+  {
+    $group: {
+      _id: "$membership",
+      totalSkills: { $sum: 1 }
+    }
+  }
+])
+
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$city",
+      numOrders: {$sum: "$orders"}
+    }
+  },
+  {$sort: {numOrders: -1}},
+  {$limit: 1},
+  {$project: { _id:0, city: "$_id",numOrders:1}}
+])
+
+db.users.aggregate([
+  {
+    $match: {membership: "gold"}
+  },
+  {
+    $unwind: "$skills"
+  },
+  {
+    $group: {
+      _id: "$skills",
+      goldmemcount: {$sum: 1}
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      skill: "$_id",
+      goldmemcount: 1
+    }
+  }
+])
+
+Find users whose number of skills is greater than the average number of skills of all users.
+db.users.aggregate([
+  {
+    $addFields: {
+      skillsCount: { $size: "$skills" }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      avgSkills: { $avg: "$skillsCount" },
+      users: {
+        $push: {
+          name: "$name",
+          skillsCount: "$skillsCount"
+        }
+      }
+    }
+  },
+  {
+    $unwind: "$users"
+  },
+  {
+    $match: {
+      $expr: { $gt: ["$users.skillsCount", "$avgSkills"] }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      name: "$users.name",
+      skillsCount: "$users.skillsCount",
+      // avgSkills: 1
+    }
+  }
+])
+
+Find total orders grouped by membership type, but only include memberships whose total orders are greater than 10.
+db.users.aggregate([
+  {
+    $group:{
+      _id: "$membership",
+      total: {$sum: "$orders"}
+    }
+  },
+  {
+    $match: {
+      total: {$gt: 10}
+    }
+  }
+])
+
+Create age groups like:
+20–22
+23–24
+25–27
+and show how many users fall into each group.
+
+db.users.aggregate([
+  {
+    $bucket: {
+      groupBy: "$age",
+      boundaries: [20,23,25,27,30],
+      default: "Other",
+      output: {
+        total: {$sum: 1}
+      }
+    }
+  }  
+])
+
+Find cities where the average orders per user is greater than 4.
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$city",
+      avgOrders: {$avg: "$orders"}
+    }
+  },
+  {
+    $match: {
+      avgOrders: {$gt: 4}
+    }
+  }
+])
+
+Find the most common skill among users.
+db.users.aggregate([
+  {
+    $unwind: "$skills"
+  },
+  {
+    $group: {
+      _id: "$skills",
+      count: {$sum: 1}
+    }
+  },
+  {
+    $sort: {count: -1}
+  },
+  {
+    $limit: 1
+  }
+])
+
+Find top 2 cities with the highest number of users.
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$city",
+      cities: {$sum: 1}
+    }
+  },
+  {
+    $sort: {
+      cities: -1
+    }
+  },
+  {
+    $limit: 2
+  }
+])
+
+Find users who have the maximum number of skills in the entire collection
+db.users.aggregate([
+  {
+    $addFields: {
+      skillcnt: {$size: "$skills"}
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      maxcnt: {$max: "$skillcnt"},
+      users: {
+        $push: {
+          name: "$name",
+          skillcnt: "$skillcnt"
+        }
+      }
+    }
+  },
+  {
+    $project: {
+      users: {
+        $filter: {
+          input: "$users",
+          as: "u",
+          cond: {
+            $eq: ["$$u.skillcnt","$maxcnt"]
+          }
+        }
+      }
+    }
+  }
+])
+
+Find membership type that has the highest average number of orders.
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$membership",
+      avgOrders: { $avg: "$orders" }
+    }
+  },
+  {
+    $sort: {
+      avgOrders: -1
+    }
+  },
+  {
+    $limit: 1
+  }
+])
