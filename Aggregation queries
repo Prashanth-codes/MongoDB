@@ -333,6 +333,15 @@ db.users.aggregate([
 
 
 **********************Lookup*******************************
+db.purchases.insertMany([
+{ _id: 1, userId: 1, product: "Laptop", amount: 800, status: "completed" },
+{ _id: 2, userId: 1, product: "Mouse", amount: 20, status: "completed" },
+{ _id: 3, userId: 2, product: "Keyboard", amount: 50, status: "completed" },
+{ _id: 4, userId: 3, product: "Phone", amount: 500, status: "pending" },
+{ _id: 5, userId: 4, product: "Tablet", amount: 300, status: "completed" },
+{ _id: 6, userId: 6, product: "Monitor", amount: 200, status: "completed" },
+{ _id: 7, userId: 6, product: "Headphones", amount: 100, status: "completed" }
+])
 
 Find all users along with their purchases.
 db.users.aggregate([
