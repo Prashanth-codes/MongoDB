@@ -1,0 +1,1086 @@
+db.users.insertMany([
+  { _id: 1, name: "Alice", age: 25, city: "Hyderabad", salary: 50000, department: "IT" },
+  { _id: 2, name: "Bob", age: 30, city: "Delhi", salary: 70000, department: "HR" },
+  { _id: 3, name: "Charlie", age: 28, city: "Hyderabad", salary: 60000, department: "IT" },
+  { _id: 4, name: "David", age: 35, city: "Mumbai", salary: 90000, department: "Finance" },
+  { _id: 5, name: "Eve", age: 22, city: "Delhi", salary: 40000, department: "HR" }
+]);
+
+db.orders.insertMany([
+  { _id: 101, customerId: 1, amount: 1200, status: "completed", createdAt: ISODate("2024-01-10"), items: ["Laptop", "Mouse"] },
+  { _id: 102, customerId: 2, amount: 800, status: "pending", createdAt: ISODate("2024-01-11"), items: ["Keyboard"] },
+  { _id: 103, customerId: 1, amount: 500, status: "completed", createdAt: ISODate("2024-01-15"), items: ["Mouse"] },
+  { _id: 104, customerId: 3, amount: 2000, status: "completed", createdAt: ISODate("2024-01-17"), items: ["Monitor", "Keyboard"] },
+  { _id: 105, customerId: 4, amount: 3000, status: "cancelled", createdAt: ISODate("2024-01-20"), items: ["Laptop"] }
+])
+
+db.products.insertMany([
+  { _id: 1, name: "Laptop", category: "Electronics", price: 50000, stock: 10, tags: ["tech", "computer"] },
+  { _id: 2, name: "Mouse", category: "Electronics", price: 1000, stock: 50, tags: ["tech", "accessory"] },
+  { _id: 3, name: "Keyboard", category: "Electronics", price: 2000, stock: 30, tags: ["tech", "accessory"] },
+  { _id: 4, name: "Monitor", category: "Electronics", price: 15000, stock: 20, tags: ["display", "tech"] },
+  { _id: 5, name: "Chair", category: "Furniture", price: 7000, stock: 15, tags: ["office", "comfort"] }
+])
+
+
+1. Show only name and salary of all users
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      salary: 1,
+      _id: 0
+    }
+  }  
+])
+
+
+2.Find users whose salary is greater than 50,000
+db.users.aggregate([
+  {
+    $match: {
+      salary: {$gt: 50000}
+    }
+  }  
+])
+
+
+3.Show users sorted by age descending
+db.users.find().sort({age: -1})
+db.users.aggregate([
+  {
+    $sort: {
+      age: -1
+    }  
+  }
+])
+
+
+4.Get first 3 users only
+db.users.find().limit(3)
+db.users.aggregate([
+  {
+    $limit: 3
+  }
+])
+
+
+5.Skip first 2 users and return remaining
+db.users.find().skip(2);
+db.users.aggregate([
+  {
+    $skip :2
+  }  
+])
+
+
+6.Show users with a new field annualSalary = salary * 12
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      salary: 1,
+      annualSalary: {
+        $multiply: ["$salary",12]
+      }
+    }
+  }  
+])
+
+
+7. Rename name to employeeName
+db.users.aggregate([
+  {
+    $project: {
+      _id: 0,
+      employeeName: "$name"
+    }
+  }
+])
+
+
+8.Find users from Hyderabad and sort by salary descending
+db.users.aggregate([
+  {
+    $match: {
+      city: "Hyderabad"
+    }
+  },
+  {
+    $sort: {
+      salary: -1
+    }
+  }
+])
+
+
+9.Count number of users in each city
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$city",
+      count: {$sum: 1}
+    }
+  }  
+])
+
+
+10.Find average salary per department
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      avgsalary: {
+        $avg: "$salary"
+      }
+    }
+  }  
+])
+
+
+11. Find maximum salary in each department
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      maxSalary: {
+        $max: "$salary"
+      }
+    }
+  }  
+])
+
+
+12. Find minimum and maximum age per city
+db.users.aggregate({
+    $group: {
+      _id: "$city",
+      minAge: {
+        $min: "$age"
+      },
+      maxAge: {
+        $max: "$age"
+      }
+    }
+  }  
+])
+
+
+13. Get total salary paid per department
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      totalSalary: {
+        $sum: "$salary"
+      }
+    }
+  }  
+])
+
+
+14.List all employee names per department
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      employees: {
+        $push: "$name"
+      }
+    }
+  }  
+])
+
+
+15. Get unique cities from users
+db.users.aggregate([
+  {
+    $group: {
+      _id: null,
+      cities: {
+        $addToSet: "$city"
+      }
+    }
+  }
+])
+
+
+16. Add a field isHighPaid if salary > 60000
+db.users.aggregate([
+  {
+    $addFields: {
+      isHighPaid: {
+        $gt: ["$salary",60000]
+      }
+    }
+  }
+])
+db.users.aggregate([
+  {
+    $addFields: {
+      isHighPaid: {
+        cond: [{$gt: ["$salary",60]},true,false]
+      }
+    }
+  }  
+])
+
+
+17.Categorize salary as "Low", "Medium", "High"
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      salary: 1,
+      salaryCategory: {
+        $cond: [
+          {
+            $lt: ["$salary",50000]
+          },
+          "Low",
+          {
+            $cond: [
+              {
+                $lte: ["$salary",70000]
+              },
+              "Medium",
+              "High"
+            ]
+          }
+        ]
+      }
+    }
+  }  
+])
+
+
+18) Create full info string: "Alice - IT - Hyderabad"
+db.users.aggregate([
+  {
+    $project: {
+      info: {
+        $concat: ["$name", " - ", "$department", " - ", "$city"]  
+      }
+    }
+  }  
+])
+
+
+19) Show age in next 5 years
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      age5: {
+        $add: ["$age",5]
+      }
+    }
+  }  
+])
+
+
+20) Find users whose names start with "A"
+db.users.aggregate([
+  {
+    $match: {
+      name: /^A/
+    }
+  }
+])
+
+
+21) Unwind all order items so each item becomes a separate document
+db.orders.aggregate([
+  {
+    $unwind: "$items"
+  }
+])
+
+
+22) Count how many times each item was ordered
+db.orders.aggregate([
+  {
+    $unwind: "$items"
+  },
+  {
+    $group:{
+      _id: "$items",
+      Count: {
+        $sum: 1 
+      }
+    }
+  }
+])
+
+
+23) Find all unique tags from products
+db.products.aggregate([
+  {
+    $unwind: "$tags"
+  },
+  {
+    $group: {
+      _id: null,
+      uniquetags: {
+        $addToSet: "$tags"
+      }
+    }
+  }
+])
+
+
+24) Count products per tag
+db.products.aggregate([
+  {
+    $unwind: "$tags"
+  },
+  {
+    $group: {
+      _id: "$tags",
+      Count: {
+        $sum: 1
+      }
+    }
+  }
+])
+
+
+25) Show number of items in each order
+db.orders.aggregate([
+  {
+    $project: {
+      customerId: 1,
+      Count: {
+        $size: "$items"
+      }
+    }
+  }  
+])
+
+
+26) Extract order year, month, and day
+db.users.aggregate([
+  {
+    $project: {
+      year: {
+        $year: "$createdAt"
+      },
+      month: {
+        $month: "$createdAt"
+      },
+      day: {
+        $dayOfMonth: "$createdAt"
+      }
+    }
+  }
+])
+
+
+27) Count number of orders per day
+db.orders.aggregate([
+  {
+    $group: {
+      _id: {
+        year: {$year: "$createdAt"},
+        month: {$month: "$createdAt"},
+        day: {$dayOfMonth: "$createdAt"}
+      },
+      totalOrders: {
+        $sum: 1
+      }
+    }
+  }  
+])
+
+
+28) Total sales per month
+db.orders.aggregate([
+  {
+    $match: {
+      status: "completed"
+    }
+  },
+  {
+    $group: {
+      _id: {
+        year: {
+          $year: "$createdAt"
+        },
+        month: {
+          $month: "$createdAt"
+        }
+      },
+      totalSales: {
+        $sum: 1
+      }
+    }
+  }
+])
+
+
+29) Find top 2 highest paid employees
+db.users.aggregate([
+  {
+    $sort: {
+      salary: -1
+    }
+  },
+  {
+    $limit: 2
+  }
+])
+
+
+30) Find department with highest average salary
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      avgsalary: {
+        $avg: "$salary"
+      }
+    }
+  },
+  {
+    $sort: {
+      avgsalary: -1
+    }
+  },
+  {
+    $limit: 1
+  },
+  {
+    $project: {
+      _id: 0,
+      department: "$_id",
+      avgsalary: 1
+    }
+  }
+])
+
+
+31) Find customers who placed more than 1 order
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$customerId",
+      totalOrders: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    $match: {
+      totalOrders: {
+        $gt: 1
+      }
+    }
+  }
+])
+
+
+32) Find total completed order amount per customer
+db.orders.aggregate([
+  {
+    $match: {
+      status: "completed"
+    }
+  },
+  {
+    $group: {
+      _id: "$customerId",
+      totalAmount: {
+        $sum: "$amount"
+      }
+    }
+  }
+])
+
+
+33) Find customer who spent the most
+db.orders.aggregate([
+  {
+    $match: {
+      status: "completed"
+    }
+  },
+  {
+    $group: {
+      _id: "$customerId",
+      totalAmount: {
+        $sum: "$amount"
+      }
+    }
+  },
+  {
+    $sort: {
+      totalAmount:-1
+    }
+  },
+  {
+    $limit: 1
+  }
+])
+
+
+34) Join users with their orders
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  }  
+])
+
+
+35) Show user name with their orders only
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      name: 1,
+      orders: 1
+    }
+  }
+])
+
+
+36) Find users who have placed at least one order
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $match: {
+      orders: {$ne: []}
+    }
+    // $match: {
+    //   $expr: {
+    //     $gt: [{$size: "$orders"},0]
+    //   }
+    // }
+  }
+])
+
+
+37) Find users who have never placed an order
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    // $match: {
+    //   orders: {$eq: []}
+    // }
+    $match: {
+      $expr: {
+        $eq: [{$size: "$orders"},0]
+      }
+    }
+  }
+])
+
+
+38) Show each user with total number of orders
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $project: {
+      name: 1,
+      totalOrders: { $size: "$orders" }
+    }
+  }
+])
+
+
+39) Show each user with total completed order amount
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $project: {
+      name: 1,
+      totalCompletedAmount: {
+        $sum: {
+          $map: {
+            input: {
+              $filter: {
+                input: "$orders",
+                as: "order",
+                cond: { $eq: ["$$order.status", "completed"] }
+              }
+            },
+            as: "completedOrder",
+            in: "$$completedOrder.amount"
+          }
+        }
+      }
+    }
+  }
+])
+
+
+40) Join users with only their completed orders
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      let: {
+        userId: "$_id"
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                {$eq: ["$customerId","$$userId"]},
+                {$eq: ["$status","completed"]}
+              ]
+            }
+          }
+        }  
+      ],
+      as: "completedOrders"
+    }
+  }  
+])
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $addFields: {
+      completedOrders: {
+        $filter: {
+          input: "$orders",
+          as: "order",
+          cond: { $eq: ["$$order.status", "completed"] }
+        }
+      }
+    }
+  },
+  {
+    $project: {
+      orders: 0
+    }
+  }
+])
+
+
+41) Show users with total completed order amount using $lookup pipeline
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$customerId", "$$userId"] },
+                { $eq: ["$status", "completed"] }
+              ]
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalSpent: { $sum: "$amount" }
+          }
+        }
+      ],
+      as: "spending"
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      name: 1,
+      totalSpent: {
+        $ifNull: [{ $first: "$spending.totalSpent" }, 0]
+      }
+    }
+  }
+])
+
+
+42) In one query, get: total users, average salary, users per city
+db.users.aggregate([
+  {
+    $facet: {
+      totalUsers: [
+        {
+          $group: {
+            _id: null,
+            count: {
+              $sum: 1
+            }
+          }
+        }  
+      ],
+      avgsalary: [{
+        $group: {
+          _id: null,
+          avgs: {
+            $avg: "$salary"
+          }
+        }
+      }],
+      userspercity: [{
+        $group: {
+          _id: "$city",
+          count: {
+            $sum: 1
+          }
+        }  
+      }]
+    }
+  }  
+])
+
+
+43) Group users into salary ranges
+db.users.aggregate([
+  {
+    $bucket: {
+      groupBy: "$salary",
+      boundaries: [0, 50000, 70000, 100000],
+      default: "Other",
+      output: {
+        count: { $sum: 1 },
+        employees: { $push: "$name" }
+      }
+    }
+  }
+])
+
+
+44) Automatically divide products into 3 price groups
+db.users.aggregate([
+  {
+    $bucketAuto: {
+      groupBy: "$salary",
+      buckets: 3
+    }
+  }  
+])
+
+
+45) Count users by department
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    $sort: {
+      count: -1
+    }
+  }
+])
+db.users.aggregate([
+  {
+    $sortByCount: "$department"
+  }
+])
+
+
+46) After lookup, flatten first order into root
+db.users.aggregate([
+  {
+    $lookup: {
+      from: "orders",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "orders"
+    }
+  },
+  {
+    $unwind: "$orders"
+  },
+  {
+    $replaceRoot: {
+      newRoot: "$orders"
+    }
+  }
+])
+
+
+47) Get page 2 with 2 users per page
+db.users.aggregate([
+  {
+    $sort: {
+      _id: 1
+    }
+  },
+  {
+    $skip: 2
+  },
+  {
+    $limit: 2
+  }
+])
+
+
+48) Get paginated users + total count in one query
+db.users.aggregate([
+  {
+    $facet: {
+      metadata: [
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: 1
+            }
+          }
+        }
+      ],
+      data: [
+        {
+          $sort: {
+            _id: 1
+            }
+        },
+        {
+          $skip: 2
+        },
+        {
+          $limit: 2
+        }
+      ]
+    }
+  }
+])
+
+
+49) Find second highest salary
+db.users.aggregate([
+  {
+    $sort: {
+      salary: -1
+    }
+  },
+  {
+    $skip: 1
+  },
+  {
+    $limit: 1
+  }
+])
+Find second highest salary with dictinct values
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$salary"
+    }
+  },
+  {
+    $sort: {
+      _id: -1
+    }
+  },
+  {
+    $skip: 1
+  },
+  {
+    $limit: 1
+  }
+])
+
+
+50) Find department(s) having more than 1 employee
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$department",
+      totalEmployees: { $sum: 1 }
+    }
+  },
+  {
+    $match: {
+      totalEmployees: { $gt: 1 }
+    }
+  }
+])
+
+
+51) Find city with highest total salary
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$city",
+      totalSalary: { 
+        $sum: "$salary" 
+      }
+    }
+  },
+  {
+    $sort: {
+      totalSalary: -1
+    }
+  },
+  {
+    $limit: 1
+  }
+])
+
+
+52) Find top-selling item from orders
+db.orders.aggregate([
+  {
+    $unwind: "$items"
+  },
+  {
+    $group: {
+      _id: "$items",
+      total: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    $sort: {
+      total: -1
+    }
+  },
+  {
+    $limit: 1
+  }
+])
+
+
+53) Find users whose completed order total exceeds 1000(my modification: to show names by using join)
+db.orders.aggregate([
+  {
+    $match: {
+      status: "completed"
+    }
+  },
+  {
+    $group: {
+      _id: "$customerId",
+      totalSpent: { $sum: "$amount" }
+    }
+  },
+  {
+    $match: {
+      totalSpent: { $gt: 1000 }
+    }
+  },
+  {
+    $lookup: {
+      from: "users",
+      localField: "_id",
+      foreignField: "_id",
+      as: "user"
+    }
+  },
+  {
+    $unwind: "$user"
+  },
+  {
+    $project: {
+      _id: 0,
+      name: "$user.name",
+      totalSpent: 1
+    }
+  }
+])
+
+
+54) Convert all product tags to uppercase
+db.products.aggregate([
+  {
+    $project: {
+      name: 1,
+      upperTags: {
+        $map: {
+          input: "$tags",
+          as: "tag",
+          in: { $toUpper: "$$tag" }
+        }
+      }
+    }
+  }
+])
+
+
+55) Filter only tags that start with "t" 
+db.products.aggregate([
+  {
+    $project: {
+      name: 1,
+      filteredTags: {
+        $filter: {
+          input: "$tags",
+          as: "tag",
+          cond: {
+            $regexMatch: {
+              input: "$$tag",
+              regex: /^t/
+            }
+          }
+        }
+      }
+    }
+  }  
+])
+
+
+56) Get first item from every order
+db.orders.aggregate([
+  {
+    $project: {
+      _id: 1,
+      firstItem: {
+        $first: "$items"
+      }
+    }
+  }  
+])
